@@ -1,16 +1,16 @@
 
 import './App.css';
-import React, { useLayoutEffect, useState } from "react";
+import React, { useLayoutEffect, useState, useRef } from "react";
 import rough from 'roughjs/bundled/rough.esm';
 import { OwnButton } from './components/button';
 import SvgIcon from '@material-ui/core/SvgIcon';
 import Icons from './icons';
-import Functions from './functions';
+import ChromePicker from 'react-color';
+import Slider from '@material-ui/core/Slider';
 
 const generator = rough.generator();
 const iconos = Icons;
 // 
-var color = 'red';
 var grosor = 9;
 var estado = 0;
 // const funciones = Functions;
@@ -30,41 +30,44 @@ function relleno() {
   estado = 4;
 }
 
-function escogerColor() {
-  estado = 3;
-}
-
 function escogerGrosor() {
   estado = 3;
 }
 
 // 
-function createElement(x1, y1, x2, y2) {
-  let roughElement = null;
-  if (estado == 0) {
-    roughElement = generator.line(x1, y1, x2, y2, { roughness: 0.5, stroke: color, strokeWidth: grosor });
-  } else if (estado == 1) {
-    roughElement = generator.circle(x1, y1, Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)), { roughness: 0.5, stroke: color, strokeWidth: grosor });
-  } else if (estado == 2) {
-    roughElement = generator.rectangle(x1, y1, x2 - x1, y2 - y1, { roughness: 0.5, stroke: color, strokeWidth: grosor });
-  } else {
-    roughElement = generator.line(x2, y2, x2, y2, { roughness: 0.5, stroke: color, strokeWidth: grosor });
-  }
-  return { x1, y1, x2, y2, roughElement };
-}
+
 // 
 function App() {
   const [elements, setElements] = useState([]);
   const [drawing, setDrawing] = useState(false);
-
+  const contextRef = useRef(null);
+  const [color, setColor] = useState('#fff');
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
   useLayoutEffect(() => {
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
     context.clearRect(0, 0, canvas.width, canvas.height);
     const roughCanvas = rough.canvas(canvas);
+    context.lineCap = "round";
+    context.strokeStyle = { color };
+    context.lineWidth = grosor;
+    contextRef.current = context;
+
     elements.forEach(({ roughElement }) => roughCanvas.draw(roughElement));
   }, [elements]);
+
+  function createElement(x1, y1, x2, y2, context) {
+    let roughElement = null;
+    if (estado == 0) {
+      roughElement = generator.line(x1, y1, x2, y2, { roughness: 0.5, stroke: color, strokeWidth: grosor });
+    } else if (estado == 1) {
+      roughElement = generator.circle(x1, y1, Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)), { roughness: 0.5, stroke: color, strokeWidth: grosor });
+    } else {
+      roughElement = generator.rectangle(x1, y1, x2 - x1, y2 - y1, { roughness: 0.5, stroke: color, strokeWidth: grosor });
+    }
+    return { x1, y1, x2, y2, roughElement };
+  }
 
   const handleMouseDown = (event) => {
     setDrawing(true);
@@ -73,16 +76,23 @@ function App() {
     setElements(prevState => [...prevState, element]);
   };
   const handleMouseMove = (event) => {
-    if (!drawing) return;
-    const { clientX, clientY } = event;
-    const index = elements.length - 1;
-    const { x1, y1 } = elements[index];
-    const updatedElement = createElement(x1, y1, clientX, clientY);
-
-    const elementsCopy = [...elements];
-    elementsCopy[index] = updatedElement;
-    setElements(elementsCopy);
+    if (drawing) {
+      const { clientX, clientY } = event;
+      const index = elements.length - 1;
+      const { x1, y1 } = elements[index];
+      var updatedElement = null;
+      if (estado < 3) {
+        updatedElement = createElement(x1, y1, clientX, clientY);
+        const elementsCopy = [...elements];
+        elementsCopy[index] = updatedElement;
+        setElements(elementsCopy);
+      } else {
+        contextRef.current.lineTo(clientX, clientY);
+        contextRef.current.stroke();
+      }
+    }
   };
+
   const handleMouseUp = () => {
     setDrawing(false);
   };
@@ -115,31 +125,58 @@ function App() {
             {iconos[4]}
           </SvgIcon>}</OwnButton>
         </div>
-        <div class="w3-col m1 1">
-          <OwnButton onclick={null}>{<SvgIcon>
+        
+         {/* COLOR */}
+         <div class="w3-col m1 1">
+          <OwnButton>{<SvgIcon onClick={() => setShowColorPicker(showColorPicker => !showColorPicker)}>
             {iconos[5]}
-          </SvgIcon>}</OwnButton>
-        </div>
-        <div class="w3-col m1 1">
-          <OwnButton onclick={null}>{<SvgIcon>
-            {iconos[6]}
-          </SvgIcon>}</OwnButton>
+          </SvgIcon>}
+          </OwnButton>
+          {showColorPicker && (
+            <ChromePicker class="w3-flex"
+              color={color}
+              onChange={updatedColor => setColor(updatedColor.hex)}
+            />
+          )}
         </div>
         
+        {/* GROSOR */}
+        <div class="w3-col m1 1">
+          <OwnButton onclick={escogerGrosor} >
+          {
+            <Slider
+            defaultValue={1}
+            valueLabelDisplay="auto"
+            step={1}
+            marks
+            min={1}
+            max={10}
+            enabled
+            style={{
+              width: 110, 
+            }}
+          />
+          }</OwnButton>
+        </div>
+
+       
+
+
+
       </div>
       <div class="w3-display-topright">
-          <OwnButton onclick={null}>{<SvgIcon>
-            {iconos[7]}
-          </SvgIcon>}</OwnButton>
-        </div>
+        <OwnButton onclick={null}>{<SvgIcon>
+          {iconos[7]}
+        </SvgIcon>}</OwnButton>
+      </div>
       <div class="w3-center">
         <canvas id='canvas'
           style={{ backgroundColor: "white" }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          width={window.innerWidth/1.1}
-          height={window.innerHeight/1.01}
+          width={window.innerWidth}
+          height={window.innerHeight}
         >
           PROGRAMACION WEB
     </canvas>
@@ -149,9 +186,9 @@ function App() {
         <a href="https://gitlab.com/IsmaDavidAA" class="fa fa-gitlab w3-hover-opacity w3-row-padding"></a>
         <a href="https://twitter.com/ImIsmaBot" class="fa fa-twitter w3-hover-opacity w3-row-padding"></a>
         <a href="https://www.linkedin.com/in/ismael-david-angulo-61ab0b1ab/"
-            class="fa fa-linkedin w3-hover-opacity w3-row-padding"></a>
+          class="fa fa-linkedin w3-hover-opacity w3-row-padding"></a>
         <p class="w3-medium">Desarrollado por: Ismael David Angulo Andrade</p>
-    </footer>
+      </footer>
     </div>
   );
 }
