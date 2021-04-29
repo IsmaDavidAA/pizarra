@@ -1,0 +1,17 @@
+:root{
+    --primary: rgb(53, 42, 156);
+    --warning: rgb(251, 255, 0);
+    --danger: rgb(192, 31, 31);
+    --success: rgb(43, 255, 0);
+    --white: #fff;
+    --dark: rgb(0, 0, 0);
+}
+
+.btn{
+    cursor: pointer;
+    transition: transform 0.5s ease;  
+}
+
+.btn:hover{
+    transform: translateY(10px);
+}
