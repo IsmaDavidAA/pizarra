@@ -39,7 +39,6 @@ export const OwnButton = ({
                 color="secondary"
                 className={'btn ${checkButtonStyles} ${checkButtonSize}'}
                 onClick={onclick}
-                
             >
                 {children}
             </Button>

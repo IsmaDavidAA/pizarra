@@ -11,70 +11,97 @@ import Slider from '@material-ui/core/Slider';
 const generator = rough.generator();
 const iconos = Icons;
 // 
-var grosor = 9;
-var estado = 0;
-// const funciones = Functions;
-function line() {
-  estado = 0;
-}
-function circle() {
-  estado = 1;
-}
-function rectangle() {
-  estado = 2;
-}
-function lapiz() {
-  estado = 3;
-}
-function relleno() {
-  estado = 4;
-}
 
-function escogerGrosor() {
-  estado = 3;
-}
-
-// 
-
+const mark = [
+  {
+    value: 1,
+    label: '1'
+  },
+  {
+    value: 2,
+    label: '2'
+  },
+  {
+    value: 3,
+    label: '3'
+  },
+  {
+    value: 4,
+    label: '4'
+  },
+  {
+    value: 5,
+    label: '5'
+  },
+]
 // 
 function App() {
   const [elements, setElements] = useState([]);
   const [drawing, setDrawing] = useState(false);
   const contextRef = useRef(null);
-  const [color, setColor] = useState('#fff');
+  const [color, setColor] = useState('#000');
+  const [estado, setEstado] = useState(0);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const canvasRef = useRef(null);
+  const [grosor, setGrosor] = useState('color');
 
   useLayoutEffect(() => {
+
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    if (estado < 3) {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+    } else {
+
+    }
+
     const roughCanvas = rough.canvas(canvas);
     context.lineCap = "round";
     context.strokeStyle = { color };
     context.lineWidth = grosor;
-    contextRef.current = context;
 
+    contextRef.current = context;
     elements.forEach(({ roughElement }) => roughCanvas.draw(roughElement));
   }, [elements]);
 
-  function createElement(x1, y1, x2, y2, context) {
+  // 
+
+  function downloadImage() {
+    const canv = document.getElementById('canvas');
+    if (window.navigator.msSaveBlob) {
+      window.navigator.msSaveBlob(canv.msSaveBlob(), "miDibujo.png");
+    } else {
+      const a = document.createElement("a")
+      document.body.appendChild(a);
+      a.href = canv.toDataURL();
+      a.download = "miDibujo.png";
+      a.click();
+      document.body.removeChild(a);
+    }
+  }
+  // 
+  function createElement(x1, y1, x2, y2) {
     let roughElement = null;
     if (estado == 0) {
       roughElement = generator.line(x1, y1, x2, y2, { roughness: 0.5, stroke: color, strokeWidth: grosor });
+      // roughElement = generator.linearPath([[x2,y2],[x2,y2]]);
     } else if (estado == 1) {
-      roughElement = generator.circle(x1, y1, Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)), { roughness: 0.5, stroke: color, strokeWidth: grosor });
+      roughElement = generator.circle(x1, y1, (Math.sqrt(Math.pow((x2 - x1), 2) + Math.pow((y2 - y1), 2)) * 2), { roughness: 0.5, stroke: color, strokeWidth: grosor });
     } else {
       roughElement = generator.rectangle(x1, y1, x2 - x1, y2 - y1, { roughness: 0.5, stroke: color, strokeWidth: grosor });
     }
     return { x1, y1, x2, y2, roughElement };
   }
 
+  // 
   const handleMouseDown = (event) => {
     setDrawing(true);
     const { clientX, clientY } = event;
+
     const element = createElement(clientX, clientY, clientX, clientY);
     setElements(prevState => [...prevState, element]);
   };
+
   const handleMouseMove = (event) => {
     if (drawing) {
       const { clientX, clientY } = event;
@@ -85,11 +112,13 @@ function App() {
         updatedElement = createElement(x1, y1, clientX, clientY);
         const elementsCopy = [...elements];
         elementsCopy[index] = updatedElement;
+        console.log(elementsCopy)
         setElements(elementsCopy);
       } else {
-        contextRef.current.lineTo(clientX, clientY);
-        contextRef.current.stroke();
+        const element = createElement(clientX, clientY, clientX, clientY);
+        setElements(prevState => [...prevState, element]);
       }
+
     }
   };
 
@@ -97,37 +126,56 @@ function App() {
     setDrawing(false);
   };
 
+  // 
+
   return (
     <div class="w3-blue ">
       <div class="w3-row w3-display-topleft">
-        <div class="w3-col m1 1">
-          <OwnButton onclick={line}>{<SvgIcon>
+        <div class="">
+          <OwnButton>
+            {
+              <Slider
+                defaultValue={1}
+                valueLabelDisplay="auto"
+                step={1}
+                marks={mark}
+                min={1}
+                max={5}
+                onChange={(e, val) => setGrosor(val)}
+                enabled
+                style={{
+                  width: 120,
+                }}
+              />
+            }</OwnButton>
+        </div>
+        <div class="">
+          <OwnButton onclick={() => setEstado(0)}>{<SvgIcon>
             {iconos[0]}
           </SvgIcon>}</OwnButton>
         </div>
-        <div class="w3-col m1 1">
-          <OwnButton onclick={circle}>{<SvgIcon>
+        <div class="">
+          <OwnButton onclick={() => setEstado(1)}>{<SvgIcon>
             {iconos[1]}
           </SvgIcon>}</OwnButton>
         </div>
-        <div class="w3-col m1 1">
-          <OwnButton onclick={rectangle}>{<SvgIcon>
+        <div class="">
+          <OwnButton onclick={() => setEstado(2)}>{<SvgIcon>
             {iconos[2]}
           </SvgIcon>}</OwnButton>
         </div>
-        <div class="w3-col m1 1">
-          <OwnButton onclick={lapiz}>{<SvgIcon>
+        <div class="">
+          <OwnButton onclick={() => setEstado(3)}>{<SvgIcon>
             {iconos[3]}
           </SvgIcon>}</OwnButton>
         </div>
-        <div class="w3-col m1 1">
-          <OwnButton onclick={relleno}>{<SvgIcon>
+        {/* <div class="w3-col m1 1">
+          <OwnButton onclick={() =>setEstado(4)}>{<SvgIcon>
             {iconos[4]}
           </SvgIcon>}</OwnButton>
-        </div>
-        
-         {/* COLOR */}
-         <div class="w3-col m1 1">
+        </div> */}
+
+        <div class="w3-col m1 1">
           <OwnButton>{<SvgIcon onClick={() => setShowColorPicker(showColorPicker => !showColorPicker)}>
             {iconos[5]}
           </SvgIcon>}
@@ -139,39 +187,19 @@ function App() {
             />
           )}
         </div>
-        
-        {/* GROSOR */}
-        <div class="w3-col m1 1">
-          <OwnButton onclick={escogerGrosor} >
-          {
-            <Slider
-            defaultValue={1}
-            valueLabelDisplay="auto"
-            step={1}
-            marks
-            min={1}
-            max={10}
-            enabled
-            style={{
-              width: 110, 
-            }}
-          />
-          }</OwnButton>
-        </div>
-
-       
-
 
 
       </div>
+
       <div class="w3-display-topright">
-        <OwnButton onclick={null}>{<SvgIcon>
+        <OwnButton onclick={downloadImage}>{<SvgIcon>
           {iconos[7]}
         </SvgIcon>}</OwnButton>
       </div>
+
       <div class="w3-center">
         <canvas id='canvas'
-          style={{ backgroundColor: "white" }}
+          style={{ backgroundColor: "#fff" }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -179,8 +207,9 @@ function App() {
           height={window.innerHeight}
         >
           PROGRAMACION WEB
-    </canvas>
+        </canvas>
       </div>
+
       <footer class="w3-container w3-padding-32 w3-center  w3-xlarge footer">
         <a href="https://github.com/IsmaDavidAA" class="fa fa-github w3-hover-opacity w3-row-padding"></a>
         <a href="https://gitlab.com/IsmaDavidAA" class="fa fa-gitlab w3-hover-opacity w3-row-padding"></a>

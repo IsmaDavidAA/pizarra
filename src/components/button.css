@@ -8,11 +8,11 @@
 }
 
 .btn{
-    /* width: 100px; */
+    min-width: 40px;
     cursor: pointer;
     transition: transform 0.5s ease;  
 }
 
 .btn:hover{
-    transform: translateY(10px);
+    transform: translateX(10px);
 }
